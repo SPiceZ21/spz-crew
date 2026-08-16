@@ -21,6 +21,8 @@ local function openDash()
     SetNuiFocus(true, true)
     SendNUIMessage({ action = "show" })
     pushData()
+    -- Weapon/radio-wheel suppression while focused is handled globally in
+    -- spz-core (client/nui_guard.lua) — covers every SPiceZ NUI.
 end
 
 local function closeDash()

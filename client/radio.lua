@@ -7,10 +7,12 @@ local channel = 0
 
 local function apply()
     if GetResourceState("pma-voice") ~= "started" then return end
+    -- pma-voice's join export is setRadioChannel (setPlayerRadio does NOT exist —
+    -- calling it silently failed inside pcall, so the radio never connected).
     if radioOn and channel > 0 then
-        pcall(function() exports["pma-voice"]:setPlayerRadio(channel) end)
+        pcall(function() exports["pma-voice"]:setRadioChannel(channel) end)
     else
-        pcall(function() exports["pma-voice"]:removePlayerFromRadio() end)
+        pcall(function() exports["pma-voice"]:setRadioChannel(0) end)
     end
 end
 
