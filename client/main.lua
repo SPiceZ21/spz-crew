@@ -15,12 +15,28 @@ local function pushData()
     SendNUIMessage({ action = "data", data = data, list = list })
 end
 
+-- ── Base theme (server.cfg spz_theme_* convars via spz-core) ────────────────
+local function pushTheme(theme)
+    if theme and next(theme) then
+        SendNUIMessage({ action = "theme", theme = theme })
+    end
+end
+
+CreateThread(function()
+    local ok, theme = pcall(function() return exports['spz-core']:GetTheme() end)
+    if ok then pushTheme(theme) end
+end)
+
+AddEventHandler("SPZ:themeUpdated", function(theme) pushTheme(theme) end)
+
 local function openDash()
     if open then return end
     open = true
     SetNuiFocus(true, true)
     SendNUIMessage({ action = "show" })
     pushData()
+    local ok, theme = pcall(function() return exports['spz-core']:GetTheme() end)
+    if ok then pushTheme(theme) end
     -- Weapon/radio-wheel suppression while focused is handled globally in
     -- spz-core (client/nui_guard.lua) — covers every SPiceZ NUI.
 end

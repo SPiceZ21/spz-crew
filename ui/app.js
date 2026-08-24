@@ -113,11 +113,32 @@
     el('tag-prev').textContent = e.target.value || '?';
   });
 
+  // Base theme (server.cfg spz_theme_* convars, pushed from spz-core).
+  const THEME_VARS = { accent: '--accent', accent2: '--accent-2', bg: '--bg', bg2: '--bg-2', danger: '--danger', gold: '--gold' };
+  // rgba(...) glows/tints reference the accent as raw components so they can
+  // carry their own alpha — keep those in sync too.
+  const THEME_RGB_VARS = { accent: '--accent-rgb' };
+  const hexToRgbTriplet = (hex) => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    return m ? `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}` : null;
+  };
+  const applyTheme = (theme) => {
+    if (!theme) return;
+    for (const key in THEME_VARS) {
+      if (theme[key]) document.documentElement.style.setProperty(THEME_VARS[key], theme[key]);
+    }
+    for (const key in THEME_RGB_VARS) {
+      const rgb = theme[key] && hexToRgbTriplet(theme[key]);
+      if (rgb) document.documentElement.style.setProperty(THEME_RGB_VARS[key], rgb);
+    }
+  };
+
   window.addEventListener('message', (e) => {
     const m = e.data || {};
     if (m.action === 'show') root.classList.remove('hidden');
     else if (m.action === 'hide') root.classList.add('hidden');
     else if (m.action === 'data') render(m.data || {}, m.list || []);
+    else if (m.action === 'theme') applyTheme(m.theme);
   });
 
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') post('close'); });

@@ -34,6 +34,7 @@ files {
 dependencies {
   'ox_lib',
   'oxmysql',
+  'spz-core',
   'spz-identity',
   'pma-voice',
 }
