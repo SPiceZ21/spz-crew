@@ -86,6 +86,51 @@ RegisterNUICallback("kick", function(d, cb)
     cb(res or { ok = false })
 end)
 
+RegisterNUICallback("updateSettings", function(d, cb)
+    local res = lib.callback.await("spz-crew:updateSettings", false, d)
+    if res and res.ok then lib.notify({ description = "Crew updated", type = "success" }) pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
+RegisterNUICallback("rival", function(_, cb)
+    cb(lib.callback.await("spz-crew:rival", false) or {})
+end)
+
+RegisterNUICallback("invitable", function(_, cb)
+    cb(lib.callback.await("spz-crew:invitable", false) or {})
+end)
+
+RegisterNUICallback("invite", function(d, cb)
+    local res = lib.callback.await("spz-crew:invite", false, d.pid)
+    if res and res.ok then lib.notify({ description = "Invite sent", type = "success" }) pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
+RegisterNUICallback("cancelInvite", function(d, cb)
+    local res = lib.callback.await("spz-crew:cancelInvite", false, d.id)
+    if res and res.ok then lib.notify({ description = "Invite cancelled", type = "info" }) pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
+RegisterNUICallback("respondInvite", function(d, cb)
+    local res = lib.callback.await("spz-crew:respondInvite", false, d.id, d.accept)
+    if res and res.ok then
+        lib.notify({ description = res.declined and "Invite declined" or "Joined crew", type = res.declined and "info" or "success" })
+        pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
+RegisterNUICallback("transferOwner", function(d, cb)
+    local res = lib.callback.await("spz-crew:transferOwner", false, d.pid)
+    if res and res.ok then lib.notify({ description = "Ownership transferred", type = "success" }) pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
 RegisterNUICallback("disband", function(_, cb)
     local res = lib.callback.await("spz-crew:disband", false)
     if res and res.ok then lib.notify({ description = "Crew disbanded", type = "warning" }) pushData()

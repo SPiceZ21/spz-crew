@@ -8,81 +8,55 @@
 </head>
 <body>
   <div id="root" class="hidden">
-    <div class="board">
-      <!-- ── Header ─────────────────────────────────────────── -->
-      <header class="hd">
-        <div class="hd-brand">
-          <span class="dot"></span>
-          <div class="hd-txt">
-            <span class="hd-title">CREW</span>
-            <span class="hd-sub">Team Headquarters</span>
+    <div class="shell">
+
+      <!-- ── Icon rail ─────────────────────────────────────────── -->
+      <nav class="rail">
+        <div class="rail-items" id="rail"></div>
+        <button class="rail-btn" id="refreshBtn" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>
+        </button>
+        <button class="rail-btn rail-close" id="closeBtn" title="Close (ESC)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </nav>
+
+      <!-- ── Main ──────────────────────────────────────────────── -->
+      <main class="main">
+        <header class="hero">
+          <div class="hero-art"></div>
+          <div class="hero-txt">
+            <h1 class="hero-title" id="heroTitle">My crew</h1>
+            <p class="hero-sub" id="heroSub">Your roster, ranked by championship points.</p>
+          </div>
+          <div class="hero-actions">
+            <div class="hero-stat">
+              <span class="hero-stat-l" id="heroCountL">Members</span>
+              <span class="hero-stat-v" id="heroCount">—</span>
+            </div>
+            <div class="hero-btns" id="heroBtns"></div>
+          </div>
+        </header>
+
+        <div class="controls">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="searchInput" type="text" placeholder="Search" autocomplete="off">
+            <span class="search-count" id="searchCount"></span>
+          </label>
+
+          <div class="seg" id="sortSeg"></div>
+
+          <div class="controls-right">
+            <div class="chipbar" id="chipbar"></div>
           </div>
         </div>
 
-        <nav class="seg">
-          <button class="seg-btn active" data-view="crew" id="seg-crew">My Crew</button>
-          <button class="seg-btn" data-view="browse" id="seg-browse">Browse<span class="seg-count" id="seg-browse-n"></span></button>
-        </nav>
+        <div class="scroll" id="scroll">
+          <div class="board" id="body"></div>
+        </div>
+      </main>
 
-        <button id="close" class="hd-close">CLOSE <span class="kbd">ESC</span></button>
-      </header>
-
-      <!-- ── Stage ──────────────────────────────────────────── -->
-      <div class="stage">
-
-        <!-- CREW VIEW -->
-        <section class="view view-crew" data-view="crew">
-
-          <!-- in a crew -->
-          <div id="mycrew" class="hidden">
-            <div class="crest">
-              <div class="crest-info">
-                <div class="crest-name" id="crew-name">Crew Name</div>
-                <div class="crest-pills">
-                  <span class="pill pill-role" id="crew-role">Member</span>
-                  <span class="pill" id="st-tag">—</span>
-                </div>
-              </div>
-              <div class="crest-metrics">
-                <div class="metric"><span class="metric-v" id="st-members">0</span><span class="metric-l">Members</span></div>
-                <div class="metric-div"></div>
-                <div class="metric"><span class="metric-v" id="st-ir">—</span><span class="metric-l">Avg iR</span></div>
-              </div>
-              <div class="crest-actions">
-                <button id="leave" class="btn btn-ghost">Leave Crew</button>
-                <button id="disband" class="btn btn-danger hidden">Disband</button>
-              </div>
-            </div>
-
-            <div class="sec-label">Roster <span class="sec-n" id="roster-n"></span></div>
-            <div id="roster" class="roster"></div>
-          </div>
-
-          <!-- not in a crew: create -->
-          <div id="create" class="hidden">
-            <div class="create-card">
-              <span class="create-emblem" id="tag-prev">?</span>
-              <div class="create-title">Start Your Crew</div>
-              <div class="create-hint">Pick a name and a short tag. You become the owner.</div>
-
-              <label class="fld-label">Crew Name</label>
-              <input id="in-name" class="fld" type="text" maxlength="24" placeholder="e.g. Night Runners">
-
-              <label class="fld-label">Tag <span class="fld-note">2–4 chars, uppercase</span></label>
-              <input id="in-tag" class="fld" type="text" maxlength="4" placeholder="NR">
-
-              <button id="create-btn" class="btn btn-primary">Create Crew</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- BROWSE VIEW -->
-        <section class="view view-browse hidden" data-view="browse">
-          <div class="sec-label">Browse Crews <span class="cooldown" id="cd"></span></div>
-          <div id="list" class="grid"></div>
-        </section>
-
-      </div>
     </div>
   </div>
   <script src="app.js"></script>
