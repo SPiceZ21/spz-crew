@@ -97,6 +97,13 @@ RegisterNUICallback("rival", function(_, cb)
     cb(lib.callback.await("spz-crew:rival", false) or {})
 end)
 
+RegisterNUICallback("rerollRival", function(_, cb)
+    local res = lib.callback.await("spz-crew:rerollRival", false)
+    if res and res.ok then lib.notify({ description = "New rival crew drawn", type = "success" }) pushData()
+    else lib.notify({ description = (res and res.error) or "Failed", type = "error" }) end
+    cb(res or { ok = false })
+end)
+
 RegisterNUICallback("invitable", function(_, cb)
     cb(lib.callback.await("spz-crew:invitable", false) or {})
 end)

@@ -127,6 +127,42 @@ local function headToHead(mine, theirs)
     return tracks, wins, losses
 end
 
+-- Recent takeovers between the two crews, newest first.
+local function rivalFeed(mine, theirs, limit)
+    local rows = MySQL.query.await([[
+        SELECT e.track, e.new_ms, e.old_ms, e.margin_ms, e.created_at,
+               e.actor_crew_id, e.target_crew_id,
+               p.username AS actor,
+               c.name     AS actor_crew,
+               t.name     AS target_crew
+        FROM rival_events e
+        JOIN players p ON p.id = e.actor_player_id
+        LEFT JOIN crews c ON c.id = e.actor_crew_id
+        LEFT JOIN crews t ON t.id = e.target_crew_id
+        WHERE e.kind = 'crew'
+          AND ((e.actor_crew_id = ? AND e.target_crew_id = ?)
+            OR (e.actor_crew_id = ? AND e.target_crew_id = ?))
+        ORDER BY e.created_at DESC
+        LIMIT ?
+    ]], { mine, theirs, theirs, mine, limit or 12 }) or {}
+
+    local out = {}
+    for _, r in ipairs(rows) do
+        out[#out + 1] = {
+            track      = r.track,
+            actor      = r.actor,
+            actor_crew = r.actor_crew,
+            target_crew = r.target_crew,
+            ours       = r.actor_crew_id == mine,
+            new_ms     = tonumber(r.new_ms),
+            old_ms     = tonumber(r.old_ms),
+            margin_ms  = tonumber(r.margin_ms),
+            created_at = r.created_at,
+        }
+    end
+    return out
+end
+
 -- ── Callback ─────────────────────────────────────────────────────────────────
 
 lib.callback.register("spz-crew:rival", function(source)
@@ -140,13 +176,121 @@ lib.callback.register("spz-crew:rival", function(source)
     local rival = crewCard(rid)
     if not rival then return { rival = nil, me = me } end
 
+    local crew = exports[IDENT]:GetCrew(p.crew_id)
+    local assigned = MySQL.scalar.await(
+        "SELECT assigned_at FROM crew_rivals WHERE crew_id = ? LIMIT 1", { p.crew_id })
+
     local tracks, wins, losses = headToHead(p.crew_id, rid)
     return {
         me = me,
         rival = rival,
         head_to_head = { wins = wins, losses = losses, tracks = #tracks },
         tracks = tracks,
+        feed = rivalFeed(p.crew_id, rid),
+        assigned_at = assigned,
+        isOwner = crew and crew.owner_id == p.id or false,
+        -- seconds until the owner may redraw; 0 = ready
+        reroll_in = (function()
+            local age = tonumber(MySQL.scalar.await(
+                "SELECT TIMESTAMPDIFF(SECOND, assigned_at, NOW()) FROM crew_rivals WHERE crew_id = ? LIMIT 1",
+                { p.crew_id }))
+            if not age then return 0 end
+            local left = (6 * 60 * 60) - age
+            return left > 0 and left or 0
+        end)(),
     }
+end)
+
+-- Owner can draw a different rival once the pairing has had time to settle.
+local REROLL_COOLDOWN = 6 * 60 * 60   -- 6 hours
+
+lib.callback.register("spz-crew:rerollRival", function(source)
+    local p = profile(source)
+    if not p or not p.crew_id then return { ok = false, error = "Not in a crew" } end
+
+    local crew = exports[IDENT]:GetCrew(p.crew_id)
+    if not crew or crew.owner_id ~= p.id then return { ok = false, error = "Only the owner can redraw the rival" } end
+
+    local age = tonumber(MySQL.scalar.await(
+        "SELECT TIMESTAMPDIFF(SECOND, assigned_at, NOW()) FROM crew_rivals WHERE crew_id = ? LIMIT 1",
+        { p.crew_id }))
+    if age and age < REROLL_COOLDOWN then
+        local mins = math.ceil((REROLL_COOLDOWN - age) / 60)
+        return { ok = false, error = ("Rival was just drawn — try again in %d min"):format(mins) }
+    end
+
+    local current = getRival(p.crew_id)
+    -- Nearest rating that is neither us nor the crew we already have.
+    local mine = crewRating(p.crew_id)
+    local next_ = MySQL.scalar.await([[
+        SELECT c.id
+        FROM crews c
+        JOIN players p ON p.crew_id = c.id
+        WHERE c.id <> ? AND (? IS NULL OR c.id <> ?)
+        GROUP BY c.id
+        HAVING COUNT(p.id) > 0
+        ORDER BY ABS(COALESCE(AVG(NULLIF(p.i_rating, 0)), 0) - ?) ASC
+        LIMIT 1
+    ]], { p.crew_id, current, current, mine })
+
+    if not next_ then return { ok = false, error = "No other crew to match against" } end
+
+    MySQL.query.await([[
+        INSERT INTO crew_rivals (crew_id, rival_crew_id) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE rival_crew_id = VALUES(rival_crew_id), assigned_at = NOW()
+    ]], { p.crew_id, next_ })
+    return { ok = true }
+end)
+
+-- ── Beat detection ───────────────────────────────────────────────────────────
+-- A member's lap that goes quicker than the rival crew's best on that track is
+-- a takeover: it gets logged and both crews hear about it.
+
+local Announced = {}   -- [crewId] = { [track] = true }  (per boot)
+
+AddEventHandler("spz-raceline:lapCompleted", function(src, track, lapMs)
+    if type(track) ~= "string" or type(lapMs) ~= "number" or lapMs <= 0 then return end
+
+    CreateThread(function()
+        local p = profile(src)
+        if not p or not p.crew_id or not p.id then return end
+
+        local rid = getRival(p.crew_id)
+        if not rid then return end
+
+        -- Rival crew's best stored lap here.
+        local rivalBest = tonumber(MySQL.scalar.await([[
+            SELECT MIN(r.best_ms) FROM racelines r
+            JOIN players pl ON pl.id = r.player_id
+            WHERE r.track = ? AND pl.crew_id = ?
+        ]], { track, rid }))
+        if not rivalBest or lapMs >= rivalBest then return end
+
+        Announced[p.crew_id] = Announced[p.crew_id] or {}
+        if Announced[p.crew_id][track] then return end
+        Announced[p.crew_id][track] = true
+
+        MySQL.insert([[
+            INSERT INTO rival_events
+                (kind, track, actor_player_id, actor_crew_id, target_crew_id, new_ms, old_ms, margin_ms)
+            VALUES ('crew', ?, ?, ?, ?, ?, ?, ?)
+        ]], { track, p.id, p.crew_id, rid, lapMs, rivalBest, rivalBest - lapMs })
+
+        local myCrew    = MySQL.scalar.await("SELECT name FROM crews WHERE id = ? LIMIT 1", { p.crew_id }) or "Your crew"
+        local rivalCrew = MySQL.scalar.await("SELECT name FROM crews WHERE id = ? LIMIT 1", { rid }) or "your rival"
+        local gap = (rivalBest - lapMs) / 1000
+
+        for _, s in ipairs(GetPlayers()) do
+            local pl = profile(tonumber(s))
+            if pl and pl.crew_id == p.crew_id then
+                TriggerClientEvent("spz-crew:notify", tonumber(s),
+                    ("%s beat %s on %s by %.2fs"):format(p.username or "A member", rivalCrew, track, gap), "success")
+            elseif pl and pl.crew_id == rid then
+                TriggerClientEvent("spz-crew:notify", tonumber(s),
+                    ("%s just took %s off you by %.2fs — reclaim it"):format(myCrew, track, gap), "warning")
+            end
+        end
+    end)
 end)
 
 -- ── Periodic re-pairing ──────────────────────────────────────────────────────

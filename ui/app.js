@@ -197,6 +197,16 @@ function buildChips(count) {
 
 function buildHeroButtons() {
   const crew = data.crew;
+
+  if (activeTab === 'rival') {
+    const ready = rival && rival.rival && rival.isOwner;
+    const wait = rival && num(rival.reroll_in);
+    heroBtns.innerHTML = ready
+      ? `<button class="btn" id="rerollBtn" ${wait > 0 ? 'disabled' : ''}>${wait > 0 ? `Redraw in ${Math.ceil(wait / 3600)}h` : 'Draw a new rival'}</button>`
+      : '';
+    return;
+  }
+
   if (activeTab !== 'crew' || !crew) { heroBtns.innerHTML = ''; return; }
   heroBtns.innerHTML = `
     <button class="btn" id="leaveBtn">Leave crew</button>
@@ -359,7 +369,7 @@ function renderRival() {
         <div class="vs-score">
           <b class="${lead > 0 ? 'up' : ''}">${fmtNum(h2h.wins)}</b><span>–</span><b class="${lead < 0 ? 'down' : ''}">${fmtNum(h2h.losses)}</b>
         </div>
-        <div class="vs-label">${num(h2h.tracks)} shared track${num(h2h.tracks) === 1 ? '' : 's'}</div>
+        <div class="vs-label">${num(h2h.tracks)} shared track${num(h2h.tracks) === 1 ? '' : 's'}${rival.assigned_at ? ' · since ' + esc(String(rival.assigned_at).slice(0, 10)) : ''}</div>
       </div>
 
       <div class="vs-side vs-right">
@@ -379,8 +389,26 @@ function renderRival() {
       ${stat('Average safety', num(me.avg_sr, 0).toFixed(2), num(them.avg_sr, 0).toFixed(2), cmp(me.avg_sr, them.avg_sr))}
     </div>`;
 
+  // Recent takeovers between the two crews.
+  const feed = Array.isArray(rival.feed) ? rival.feed : [];
+  const feedCard = feed.length ? `
+    <div class="set-card feed">
+      <div class="set-title">Recent takeovers</div>
+      <div class="feed-list">
+        ${feed.map(f => `
+          <div class="feed-row ${f.ours ? 'ours' : 'theirs'}">
+            <i></i>
+            <div class="who-txt">
+              <div class="nm">${esc(f.actor || 'A driver')} <span class="vs-sep">took</span> ${esc(f.track)}</div>
+              <div class="meta">${f.margin_ms != null ? 'by ' + (num(f.margin_ms) / 1000).toFixed(3) + 's' : ''}${f.new_ms ? ' · ' + msToLap(f.new_ms) : ''}${f.created_at ? ' · ' + esc(String(f.created_at).slice(0, 16).replace('T', ' ')) : ''}</div>
+            </div>
+            <span class="pill ${f.ours ? 'good' : 'bad'}">${f.ours ? 'Us' : 'Them'}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
   if (!tracks.length) {
-    return header + emptyState('Neither crew has a stored lap yet.');
+    return header + feedCard + emptyState('Neither crew has a stored lap yet.');
   }
 
   const sorted = tracks.slice().sort((a, b) => {
@@ -429,7 +457,7 @@ function renderRival() {
     </div>`;
   }).join('');
 
-  return header + head + rows;
+  return header + feedCard + head + rows;
 }
 
 // ── Invites (incoming) ───────────────────────────────────────────────────────
@@ -849,6 +877,10 @@ body.addEventListener('input', e => {
 });
 
 heroBtns.addEventListener('click', e => {
+  if (e.target.closest('#rerollBtn')) {
+    post('rerollRival').then(res => { if (res && res.ok) { rival = null; loadRival(); } });
+    return;
+  }
   if (e.target.closest('#leaveBtn')) post('leave');
   else if (e.target.closest('#disbandBtn') && confirm('Disband the crew for everyone?')) post('disband');
 });
@@ -917,7 +949,7 @@ if (typeof GetParentResourceName !== 'function') {
     { id: 5, name: 'Vinewood Vipers', tag: 'VV', owner: 'Kimberly', owner_avatar: av(3), created_at: '2026-04-02', description: 'Casual weekend grid. All classes welcome.', recruiting: true, members: 7, avg_irating: 1420, points: 29500, avg_sr: 2.44, podiums: 96, top_irating: 1610, active_week: 5 },
     { id: 8, name: 'Docks Syndicate', tag: 'DCK', owner: 'Pudge', owner_avatar: av(4), created_at: '2026-06-20', description: 'Docks time-trial specialists.', recruiting: false, members: 3, avg_irating: 1210, points: 11200, avg_sr: 1.92, podiums: 24, top_irating: 1320, active_week: 1 },
   ];
-  rival = {"me":{"id":3,"name":"Night Runners","tag":"NR","image":"https://cdn.discordapp.com/embed/avatars/3.png","members":4,"avg_irating":1572,"avg_sr":2.81,"points":36800,"races":210,"wins":97,"podiums":141},"rival":{"id":5,"name":"Vinewood Vipers","tag":"VV","members":7,"avg_irating":1420,"avg_sr":2.44,"points":29500,"races":264,"wins":71,"podiums":96},"head_to_head":{"wins":3,"losses":2,"tracks":6},"tracks":[{"track":"Downtown GP","my_ms":72000,"rival_ms":70250,"my_holder":"SPICEZ","rival_holder":"Kimberly","margin":-1750},{"track":"Docks Lines","my_ms":76300,"rival_ms":78700,"my_holder":"ItzSteve","rival_holder":"Pudge","margin":2400},{"track":"Route 68","my_ms":80600,"rival_ms":83000,"my_holder":"Ghost","rival_holder":"Kimberly","margin":2400},{"track":"Vinewood Loop","my_ms":84900,"rival_ms":83150,"my_holder":"SPICEZ","rival_holder":"FlyWithMe","margin":-1750},{"track":"Airport Sprint","my_ms":89200,"rival_ms":null,"my_holder":"Rens","rival_holder":null,"margin":null},{"track":"Sandy Ridge","my_ms":null,"rival_ms":95900,"my_holder":null,"rival_holder":"Pudge","margin":null}]};
+  rival = {"me":{"id":3,"name":"Night Runners","tag":"NR","image":"https://cdn.discordapp.com/embed/avatars/3.png","members":4,"avg_irating":1572,"avg_sr":2.81,"points":36800,"races":210,"wins":97,"podiums":141},"rival":{"id":5,"name":"Vinewood Vipers","tag":"VV","members":7,"avg_irating":1420,"avg_sr":2.44,"points":29500,"races":264,"wins":71,"podiums":96},"head_to_head":{"wins":3,"losses":2,"tracks":6},"assigned_at":"2026-08-12 10:04","isOwner":true,"reroll_in":0,"feed":[{"track":"Docks Lines","actor":"SPICEZ","ours":true,"new_ms":76300,"old_ms":78700,"margin_ms":2400,"created_at":"2026-08-28 21:14"},{"track":"Downtown GP","actor":"Kimberly","ours":false,"new_ms":70250,"old_ms":72000,"margin_ms":1750,"created_at":"2026-08-27 19:02"},{"track":"Route 68","actor":"Ghost","ours":true,"new_ms":80400,"old_ms":82800,"margin_ms":2400,"created_at":"2026-08-25 23:41"}],"tracks":[{"track":"Downtown GP","my_ms":72000,"rival_ms":70250,"my_holder":"SPICEZ","rival_holder":"Kimberly","margin":-1750},{"track":"Docks Lines","my_ms":76300,"rival_ms":78700,"my_holder":"ItzSteve","rival_holder":"Pudge","margin":2400},{"track":"Route 68","my_ms":80600,"rival_ms":83000,"my_holder":"Ghost","rival_holder":"Kimberly","margin":2400},{"track":"Vinewood Loop","my_ms":84900,"rival_ms":83150,"my_holder":"SPICEZ","rival_holder":"FlyWithMe","margin":-1750},{"track":"Airport Sprint","my_ms":89200,"rival_ms":null,"my_holder":"Rens","rival_holder":null,"margin":null},{"track":"Sandy Ridge","my_ms":null,"rival_ms":95900,"my_holder":null,"rival_holder":"Pudge","margin":null}]};
   root.classList.remove('hidden');
   render();
 }

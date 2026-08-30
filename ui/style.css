@@ -733,3 +733,21 @@ select.fld option { background: var(--bg-card); color: var(--tx-1); }
 .col.time .col-v { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
 .row.r-lead  { background: linear-gradient(92deg, rgba(34,197,94,.07), rgba(16,16,17,0) 40%), var(--bg-card); }
 .row.r-trail { background: linear-gradient(92deg, rgba(239,68,68,.07), rgba(16,16,17,0) 40%), var(--bg-card); }
+
+/* Rivalry activity feed */
+.set-card.feed { margin-bottom: 12px; }
+.feed-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.feed-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--line);
+}
+.feed-row > i { width: 3px; align-self: stretch; border-radius: 2px; background: var(--tx-4); flex-shrink: 0; }
+.feed-row.ours > i  { background: var(--green); }
+.feed-row.theirs > i { background: #ef4444; }
+.feed-row .who-txt { flex: 1; min-width: 0; }
+.vs-sep { color: var(--tx-4); font-weight: 600; font-size: 11px; margin: 0 3px; }
+.pill.good { color: var(--green); border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.1); }
+.pill.bad  { color: #ef4444;    border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.1); }
