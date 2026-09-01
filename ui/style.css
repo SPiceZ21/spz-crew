@@ -47,8 +47,14 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(14px);
+  /* Scrim over the game. NO backdrop-filter: this element is the page backdrop
+     itself, and CEF has nothing behind a transparent NUI page to sample — the
+     game world is composited underneath the browser surface, not inside it. A
+     blur here therefore filters empty pixels and paints the whole screen
+     BLACK, which is why everything outside the panel went dark. A flat
+     translucent wash gives the separation the blur was there for, and actually
+     lets the world through. */
+  background: rgba(0, 0, 0, 0.5);
   font-family: var(--font-body);
   color: var(--tx-1);
 }
