@@ -30,6 +30,7 @@ files {
   'ui/style.css',
   'ui/app.js',
   'ui/fonts/*.ttf',
+  'ui/Assets/ranks/*.svg',
 }
 
 dependencies {

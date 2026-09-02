@@ -131,6 +131,36 @@ function avatar(name, url, big) {
   }
   return `<div class="${cls}" style="--av:hsl(${hue} 62% 62%)">${initial}</div>`;
 }
+// ── Rank badges ──────────────────────────────────────────────────────────────
+// spz-progression stores the rank as "<tier>-<sub>" (C-1 … S-5, see
+// spz-progression/server/ranks.lua). Assets/ranks holds one SVG per rank; the S
+// tier's 3/4/5 files are named RANK3/4/5 rather than RANKS3/4/5.
+const RANK_FILES = (() => {
+  const map = {};
+  for (const t of ['A', 'B', 'C']) for (let i = 1; i <= 5; i++) map[t + i] = `RANK${t}${i}`;
+  map.S1 = 'RANKS1'; map.S2 = 'RANKS2';
+  map.S3 = 'RANK3';  map.S4 = 'RANK4'; map.S5 = 'RANK5';
+  return map;
+})();
+
+// "S-3" / "s3" → "Assets/ranks/RANK3.svg", or null when the rank has no art
+// (an unranked profile, or a value the DB has never seen).
+function rankAsset(rank) {
+  const m = /^\s*([SABC])\s*-?\s*([1-5])\s*$/i.exec(String(rank || ''));
+  if (!m) return null;
+  const file = RANK_FILES[m[1].toUpperCase() + m[2]];
+  return file ? `Assets/ranks/${file}.svg` : null;
+}
+
+function rankBadge(rank, big) {
+  const src = rankAsset(rank);
+  if (!src) return '';
+  const label = String(rank).toUpperCase();
+  return `<span class="rank-badge${big ? ' rb-lg' : ''}" title="${esc(label)}">
+    <img src="${esc(src)}" alt="${esc(label)}" draggable="false" loading="lazy" onerror="this.remove()">
+  </span>`;
+}
+
 // Crew crest: the uploaded image when there is one, else the text tag.
 function crewCrest(crew, cls) {
   const tag = esc(crew.tag || '??');
@@ -264,6 +294,7 @@ function renderCrew() {
   const head = `<div class="thead">
     <span style="min-width:46px">Place</span>
     <span style="flex:1;margin-left:10px">Driver</span>
+    <span style="width:62px;text-align:center">Rank</span>
     <span style="width:104px">iRating</span>
     <span style="width:104px">Wins</span>
     <span style="width:104px">Points</span>
@@ -282,6 +313,7 @@ function renderCrew() {
           <div class="nm">${esc(m.name || 'Driver')} ${m.owner ? CROWN : ''}</div>
           <div class="meta">${esc(m.rank || 'Driver')} · LVL ${num(m.level, 1)}${mine ? ' · you' : ''}</div>
         </div></div>
+        ${rankBadge(m.rank)}
         <div class="col"><div class="col-v">${fmtNum(m.irating)}</div>${bar(m.irating, maxIr, 'var(--blue)')}</div>
         <div class="col"><div class="col-v">${fmtNum(m.wins)}</div>${bar(m.wins, maxWin, 'var(--green)')}</div>
         <div class="col"><div class="col-v">${fmtNum(m.points)}</div>${bar(m.points, maxPts)}</div>
@@ -611,6 +643,7 @@ function renderSettings() {
             ${outgoing.map(o => `
               <div class="invite-row">
                 ${avatar(o.name, o.avatar)}
+                ${rankBadge(o.rank)}
                 <div class="who-txt">
                   <div class="nm">${esc(o.name)}</div>
                   <div class="meta">${o.online ? 'Online' : 'Offline'}${o.irating ? ' · ' + fmtNum(o.irating) + ' iR' : ''}${o.created_at ? ' · sent ' + esc(String(o.created_at).slice(0, 10)) : ''}</div>
@@ -658,6 +691,7 @@ function renderBrowse() {
   const head = `<div class="thead">
     <span style="min-width:46px">Tag</span>
     <span style="flex:1;margin-left:10px">Crew</span>
+    <span style="width:62px;text-align:center">Owner</span>
     <span style="width:104px">Members</span>
     <span style="width:104px">Avg iR</span>
     <span style="width:104px">Points</span>
@@ -676,6 +710,7 @@ function renderBrowse() {
           <div class="nm">${esc(c.name || 'Crew')}${c.recruiting === false ? ' <span class="pill">Closed</span>' : ''}</div>
           <div class="meta">${c.description ? esc(c.description) : (c.owner ? 'Led by ' + esc(c.owner) : 'No owner')}${isMine ? ' · your crew' : ''}</div>
         </div></div>
+        ${rankBadge(c.owner_rank)}
         <div class="col"><div class="col-v">${fmtNum(c.members)}</div>${bar(c.members, maxMembers, 'var(--blue)')}</div>
         <div class="col"><div class="col-v">${c.avg_irating ? fmtNum(c.avg_irating) : '—'}</div></div>
         <div class="col"><div class="col-v">${fmtNum(c.points)}</div>${bar(c.points, maxPoints)}</div>
@@ -690,6 +725,7 @@ function renderBrowse() {
       </div>
       ${detailCards([
         ['Founded', c.created_at ? String(c.created_at).slice(0, 10) : null],
+        ['Owner rank', c.owner_rank],
         ['Podiums', c.podiums ? fmtNum(c.podiums) : null],
         ['Best driver rating', c.top_irating ? fmtNum(c.top_irating) : null],
         ['Average safety', c.avg_sr ? num(c.avg_sr).toFixed(2) : null],
@@ -925,14 +961,14 @@ if (typeof GetParentResourceName !== 'function') {
       image: 'https://cdn.discordapp.com/embed/avatars/3.png', created_at: '2026-02-14 21:05',
       description: 'Late-night street runs. Class S focus, no contact racing.', colour: '#ff6200', recruiting: true },
     roster: [
-      { pid: 1, name: 'SPICEZ',   avatar: av(0), rank: 'Legend', level: 24, irating: 1840, sr: 3.42, points: 12500, races: 60, wins: 42, podiums: 51, playtime: 184000, last_track: 'Downtown GP', last_race_at: 1787000000, owner: true },
-      { pid: 2, name: 'ItzSteve', avatar: av(1), rank: 'Pro',    level: 18, irating: 1620, sr: 2.98, points: 9800,  races: 55, wins: 24, podiums: 38, playtime: 121000, last_track: 'Route 68', last_race_at: 1786800000 },
-      { pid: 3, name: 'Ghost',    avatar: av(2), rank: 'Pro',    level: 15, irating: 1510, sr: 2.10, points: 8100,  races: 51, wins: 20, podiums: 31, playtime: 98000, last_track: 'Docks Lines', last_race_at: 1786600000 },
-      { pid: 4, name: 'Rens',                    rank: 'Racer',  level: 12, irating: 1320, sr: 2.75, points: 6400,  races: 44, wins: 11 },
+      { pid: 1, name: 'SPICEZ',   avatar: av(0), rank: 'S-1', level: 24, irating: 1840, sr: 3.42, points: 12500, races: 60, wins: 42, podiums: 51, playtime: 184000, last_track: 'Downtown GP', last_race_at: 1787000000, owner: true },
+      { pid: 2, name: 'ItzSteve', avatar: av(1), rank: 'A-2',    level: 18, irating: 1620, sr: 2.98, points: 9800,  races: 55, wins: 24, podiums: 38, playtime: 121000, last_track: 'Route 68', last_race_at: 1786800000 },
+      { pid: 3, name: 'Ghost',    avatar: av(2), rank: 'A-4',    level: 15, irating: 1510, sr: 2.10, points: 8100,  races: 51, wins: 20, podiums: 31, playtime: 98000, last_track: 'Docks Lines', last_race_at: 1786600000 },
+      { pid: 4, name: 'Rens',                    rank: 'B-1',  level: 12, irating: 1320, sr: 2.75, points: 6400,  races: 44, wins: 11 },
     ],
   };
   data.outgoing = [
-    { id: 11, pid: 7, name: 'FlyWithMe', avatar: 'https://cdn.discordapp.com/embed/avatars/1.png', irating: 1380, online: true,  created_at: '2026-08-26' },
+    { id: 11, pid: 7, name: 'FlyWithMe', avatar: 'https://cdn.discordapp.com/embed/avatars/1.png', rank: 'B-3', irating: 1380, online: true,  created_at: '2026-08-26' },
     { id: 12, pid: 9, name: 'BigBob007', irating: 1150, online: false, created_at: '2026-08-22' },
   ];
   data.invites = [
@@ -945,9 +981,9 @@ if (typeof GetParentResourceName !== 'function') {
     { pid: 15, name: 'n0nameplayer', irating: 1090, invited: false },
   ];
   list = [
-    { id: 3, name: 'Night Runners', tag: 'NR', owner: 'SPICEZ', owner_avatar: av(0), image: 'https://cdn.discordapp.com/embed/avatars/3.png', created_at: '2026-02-14', members: 4, avg_irating: 1572, points: 36800, avg_sr: 2.81, podiums: 141, top_irating: 1840, active_week: 3 },
-    { id: 5, name: 'Vinewood Vipers', tag: 'VV', owner: 'Kimberly', owner_avatar: av(3), created_at: '2026-04-02', description: 'Casual weekend grid. All classes welcome.', recruiting: true, members: 7, avg_irating: 1420, points: 29500, avg_sr: 2.44, podiums: 96, top_irating: 1610, active_week: 5 },
-    { id: 8, name: 'Docks Syndicate', tag: 'DCK', owner: 'Pudge', owner_avatar: av(4), created_at: '2026-06-20', description: 'Docks time-trial specialists.', recruiting: false, members: 3, avg_irating: 1210, points: 11200, avg_sr: 1.92, podiums: 24, top_irating: 1320, active_week: 1 },
+    { id: 3, name: 'Night Runners', tag: 'NR', owner: 'SPICEZ', owner_avatar: av(0), owner_rank: 'S-1', image: 'https://cdn.discordapp.com/embed/avatars/3.png', created_at: '2026-02-14', members: 4, avg_irating: 1572, points: 36800, avg_sr: 2.81, podiums: 141, top_irating: 1840, active_week: 3 },
+    { id: 5, name: 'Vinewood Vipers', tag: 'VV', owner: 'Kimberly', owner_avatar: av(3), owner_rank: 'B-3', created_at: '2026-04-02', description: 'Casual weekend grid. All classes welcome.', recruiting: true, members: 7, avg_irating: 1420, points: 29500, avg_sr: 2.44, podiums: 96, top_irating: 1610, active_week: 5 },
+    { id: 8, name: 'Docks Syndicate', tag: 'DCK', owner: 'Pudge', owner_avatar: av(4), owner_rank: 'C-2', created_at: '2026-06-20', description: 'Docks time-trial specialists.', recruiting: false, members: 3, avg_irating: 1210, points: 11200, avg_sr: 1.92, podiums: 24, top_irating: 1320, active_week: 1 },
   ];
   rival = {"me":{"id":3,"name":"Night Runners","tag":"NR","image":"https://cdn.discordapp.com/embed/avatars/3.png","members":4,"avg_irating":1572,"avg_sr":2.81,"points":36800,"races":210,"wins":97,"podiums":141},"rival":{"id":5,"name":"Vinewood Vipers","tag":"VV","members":7,"avg_irating":1420,"avg_sr":2.44,"points":29500,"races":264,"wins":71,"podiums":96},"head_to_head":{"wins":3,"losses":2,"tracks":6},"assigned_at":"2026-08-12 10:04","isOwner":true,"reroll_in":0,"feed":[{"track":"Docks Lines","actor":"SPICEZ","ours":true,"new_ms":76300,"old_ms":78700,"margin_ms":2400,"created_at":"2026-08-28 21:14"},{"track":"Downtown GP","actor":"Kimberly","ours":false,"new_ms":70250,"old_ms":72000,"margin_ms":1750,"created_at":"2026-08-27 19:02"},{"track":"Route 68","actor":"Ghost","ours":true,"new_ms":80400,"old_ms":82800,"margin_ms":2400,"created_at":"2026-08-25 23:41"}],"tracks":[{"track":"Downtown GP","my_ms":72000,"rival_ms":70250,"my_holder":"SPICEZ","rival_holder":"Kimberly","margin":-1750},{"track":"Docks Lines","my_ms":76300,"rival_ms":78700,"my_holder":"ItzSteve","rival_holder":"Pudge","margin":2400},{"track":"Route 68","my_ms":80600,"rival_ms":83000,"my_holder":"Ghost","rival_holder":"Kimberly","margin":2400},{"track":"Vinewood Loop","my_ms":84900,"rival_ms":83150,"my_holder":"SPICEZ","rival_holder":"FlyWithMe","margin":-1750},{"track":"Airport Sprint","my_ms":89200,"rival_ms":null,"my_holder":"Rens","rival_holder":null,"margin":null},{"track":"Sandy Ridge","my_ms":null,"rival_ms":95900,"my_holder":null,"rival_holder":"Pudge","margin":null}]};
   root.classList.remove('hidden');

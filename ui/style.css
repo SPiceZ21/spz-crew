@@ -1,3 +1,6 @@
+@font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Extralight.ttf') format('truetype'); font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
 @font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Semibold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
 @font-face { font-family: 'Panchang'; src: url('fonts/Panchang-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
@@ -30,7 +33,8 @@
   --tx-3:        #85858a;
   --tx-4:        #5d5d62;
 
-  --font-body:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Body copy is Panchang Semibold; headings and figures stay on the heavy cuts. */
+  --font-body:   'Panchang', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-disp:   'Panchang', 'Inter', sans-serif;
   --font-mono:   'JetBrains Mono', 'Consolas', monospace;
 
@@ -56,6 +60,7 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
      lets the world through. */
   background: rgba(0, 0, 0, 0.5);
   font-family: var(--font-body);
+  font-weight: 600;
   color: var(--tx-1);
 }
 #root.hidden { display: none; }
@@ -249,7 +254,7 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
   border-radius: 9px;
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.03);
-  font-size: 11.5px; font-weight: 700; color: var(--tx-3);
+  font-size: 11.5px; font-weight: 600; color: var(--tx-3);
 }
 .chip-info b { color: var(--tx-1); font-family: var(--font-disp); font-weight: 800; }
 .live-dot {
@@ -348,7 +353,7 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
 .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .who-txt { min-width: 0; }
 .nm {
-  font-size: 13.5px; font-weight: 700; color: var(--tx-1);
+  font-size: 13.5px; font-weight: 600; color: var(--tx-1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .meta { margin-top: 2px; font-size: 11px; color: var(--tx-4); }
@@ -390,6 +395,23 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
 .chip.C { color: var(--green); border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.1); }
 .chip.D { color: #94a3b8; border-color: rgba(148,163,184,.4); background: rgba(148,163,184,.1); }
 
+/* Rank badge — Assets/ranks art, one SVG per C-1 … S-5 rank */
+.rank-badge {
+  flex-shrink: 0;
+  display: block;
+  width: 62px; height: 52px;
+  /* Taller than the row's own content — the negative margin lets it read big
+     without pushing every row height up with it. */
+  margin: -7px 0;
+}
+.rank-badge img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,.55));
+}
+.rank-badge.rb-lg { width: 56px; height: 44px; margin: -5px 0; }
+
 /* Expand chevron */
 .caret {
   flex-shrink: 0;
@@ -423,7 +445,7 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background: transpar
 }
 .dcard-v {
   margin-top: 5px;
-  font-size: 13px; font-weight: 700; color: var(--tx-1);
+  font-size: 13px; font-weight: 600; color: var(--tx-1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
