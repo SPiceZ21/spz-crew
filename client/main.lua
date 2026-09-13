@@ -33,6 +33,7 @@ local function openDash()
     if open then return end
     open = true
     SetNuiFocus(true, true)
+    pcall(function() exports['spz-core']:StartTablet() end)
     SendNUIMessage({ action = "show" })
     pushData()
     local ok, theme = pcall(function() return exports['spz-core']:GetTheme() end)
@@ -44,6 +45,7 @@ end
 local function closeDash()
     open = false
     SetNuiFocus(false, false)
+    pcall(function() exports['spz-core']:StopTablet() end)
     SendNUIMessage({ action = "hide" })
 end
 
