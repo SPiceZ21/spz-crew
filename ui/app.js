@@ -133,17 +133,15 @@ function avatar(name, url, big) {
 }
 // ── Rank badges ──────────────────────────────────────────────────────────────
 // spz-progression stores the rank as "<tier>-<sub>" (C-1 … S-5, see
-// spz-progression/server/ranks.lua). Assets/ranks holds one SVG per rank; the S
-// tier's 3/4/5 files are named RANK3/4/5 rather than RANKS3/4/5.
+// spz-progression/server/ranks.lua). Assets/ranks holds one SVG per rank,
+// named RANK<tier><sub> for every tier (RANKC1 … RANKS5).
 const RANK_FILES = (() => {
   const map = {};
-  for (const t of ['A', 'B', 'C']) for (let i = 1; i <= 5; i++) map[t + i] = `RANK${t}${i}`;
-  map.S1 = 'RANKS1'; map.S2 = 'RANKS2';
-  map.S3 = 'RANK3';  map.S4 = 'RANK4'; map.S5 = 'RANK5';
+  for (const t of ['A', 'B', 'C', 'S']) for (let i = 1; i <= 5; i++) map[t + i] = `RANK${t}${i}`;
   return map;
 })();
 
-// "S-3" / "s3" → "Assets/ranks/RANK3.svg", or null when the rank has no art
+// "S-3" / "s3" → "Assets/ranks/RANKS3.svg", or null when the rank has no art
 // (an unranked profile, or a value the DB has never seen).
 function rankAsset(rank) {
   const m = /^\s*([SABC])\s*-?\s*([1-5])\s*$/i.exec(String(rank || ''));
