@@ -56,6 +56,10 @@ RegisterKeyMapping("crew", "Open crew dashboard", "keyboard", "")
 
 RegisterNUICallback("close", function(_, cb) closeDash(); cb(1) end)
 
+-- spz-tutorial closes whatever it opened when the tour moves on.
+AddEventHandler("spz-tutorial:closeUI", function() if open then closeDash() end end)
+
+
 RegisterNUICallback("refresh", function(_, cb)
     pushData(); cb(1)
 end)
