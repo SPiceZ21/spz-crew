@@ -6,7 +6,7 @@
 local RADIO_BASE = 900000
 
 local function crewIdOf(src)
-    local ok, p = pcall(function() return exports["spz-identity"]:GetProfile(src) end)
+    local ok, p = pcall(function() return exports["spz-core"]:GetProfile(src) end)
     return ok and p and p.crew_id or nil
 end
 

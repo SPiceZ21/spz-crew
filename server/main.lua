@@ -3,7 +3,7 @@
 -- LeaveCrew handle cooldown + statebag sync). Adds the dashboard reads (my crew
 -- + roster, browse list) and owner actions (kick, disband).
 
-local IDENT = "spz-identity"
+local IDENT = "spz-core"   -- identity (crews backend) is part of spz-core
 
 local function profile(src)
     local ok, p = pcall(function() return exports[IDENT]:GetProfile(src) end)

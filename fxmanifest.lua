@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 name 'spz-crew'
-description 'SPiceZ Crew — dashboard to create/browse/join crews, manage the roster, kick, disband. Reuses spz-identity crew backend.'
+description 'SPiceZ Crew — dashboard to create/browse/join crews, manage the roster, kick, disband. Reuses the crew backend in spz-core (identity).'
 version '1.2.2'
 author 'SPiceZ-Core'
 lua54 'yes'
@@ -34,6 +34,5 @@ dependencies {
   'ox_lib',
   'oxmysql',
   'spz-core',
-  'spz-identity',
   'pma-voice',
 }

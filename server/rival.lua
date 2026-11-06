@@ -4,7 +4,7 @@
 -- crew_rivals and refreshed periodically; the dashboard reads a head-to-head
 -- built from the crews' stored best laps (racelines) and career results.
 
-local IDENT = "spz-identity"
+local IDENT = "spz-core"   -- identity (crews backend) is part of spz-core
 
 local function profile(src)
     local ok, p = pcall(function() return exports[IDENT]:GetProfile(src) end)
