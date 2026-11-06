@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'spz-crew'
 description 'SPiceZ Crew — dashboard to create/browse/join crews, manage the roster, kick, disband. Reuses the crew backend in spz-core (identity).'
-version '1.2.2'
+version '1.2.3'
 author 'SPiceZ-Core'
 lua54 'yes'
 
